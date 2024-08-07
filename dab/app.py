@@ -4,6 +4,11 @@ from discord.ext import commands
 import threading
 import asyncio
 import os
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -27,32 +32,41 @@ received_messages = []
 
 @bot.event
 async def on_ready():
-    print(f'Bot is ready. Logged in as {bot.user}')
+    logger.info(f'Bot is ready. Logged in as {bot.user}')
 
 @bot.event
 async def on_message(message):
     if dm_mode and message.guild is None and message.author != bot.user:
-        print(f"Received DM from {message.author}: {message.content}")
+        logger.info(f"Received DM from {message.author}: {message.content}")
         received_messages.append((message.author.name, message.content))
 
 async def send_channel_message(channel_id, message):
     channel = bot.get_channel(channel_id)
     if channel is None:
-        print(f"Error: Channel with ID {channel_id} not found.")
+        logger.error(f"Error: Channel with ID {channel_id} not found.")
     elif isinstance(channel, discord.TextChannel):
         await channel.send(message)
     else:
-        print(f"Error: Channel with ID {channel_id} is not a text channel.")
+        logger.error(f"Error: Channel with ID {channel_id} is not a text channel.")
 
 async def send_dm(user_id, message):
     user = await bot.fetch_user(user_id)
     if user is None:
-        print(f"Error: User with ID {user_id} not found.")
+        logger.error(f"Error: User with ID {user_id} not found.")
     else:
         await user.send(message)
 
 def run_bot():
-    bot.run(os.environ.get('DISCORD_TOKEN'))
+    token = os.environ.get('DISCORD_TOKEN')
+    if not token:
+        logger.error("DISCORD_TOKEN environment variable is not set!")
+        return
+
+    try:
+        logger.info("Starting bot...")
+        bot.run(token)
+    except Exception as e:
+        logger.exception(f"Error running bot: {e}")
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -75,7 +89,13 @@ def send_message():
     return redirect(url_for('index'))
 
 if __name__ == "__main__":
+    logger.info("Starting application...")
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.start()
+    logger.info("Bot thread started")
 
-    app.run(host='0.0.0.0', port=5001)
+    try:
+        logger.info("Starting Flask app...")
+        app.run(host='0.0.0.0', port=5001)
+    except Exception as e:
+        logger.exception(f"Error running Flask app: {e}")
