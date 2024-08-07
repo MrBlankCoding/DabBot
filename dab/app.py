@@ -30,6 +30,10 @@ dm_mode = False
 # List to store received messages
 received_messages = []
 
+# Create an event loop for async operations
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 @bot.event
 async def on_ready():
     logger.info(f'Bot is ready. Logged in as {bot.user}')
@@ -64,7 +68,7 @@ def run_bot():
 
     try:
         logger.info("Starting bot...")
-        bot.run(token)
+        asyncio.run(bot.start(token))
     except Exception as e:
         logger.exception(f"Error running bot: {e}")
 
@@ -83,9 +87,9 @@ def send_message():
     global channel_id, user_id, dm_mode
     message = request.form['message']
     if dm_mode and user_id:
-        bot.loop.create_task(send_dm(user_id, message))
+        asyncio.run_coroutine_threadsafe(send_dm(user_id, message), loop)
     elif channel_id:
-        bot.loop.create_task(send_channel_message(channel_id, message))
+        asyncio.run_coroutine_threadsafe(send_channel_message(channel_id, message), loop)
     return redirect(url_for('index'))
 
 if __name__ == "__main__":
