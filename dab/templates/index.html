@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Bot Control</title>
+</head>
+<body>
+    <h1>Discord Bot Control Panel</h1>
+    <form method="POST" action="/">
+        <label for="channel_id">Channel ID:</label>
+        <input type="text" id="channel_id" name="channel_id" value="{{ channel_id or '' }}"><br><br>
+
+        <label for="user_id">User ID:</label>
+        <input type="text" id="user_id" name="user_id" value="{{ user_id or '' }}"><br><br>
+
+        <label for="dm_mode">DM Mode:</label>
+        <input type="checkbox" id="dm_mode" name="dm_mode" {% if dm_mode %}checked{% endif %}><br><br>
+
+        <input type="submit" value="Save Settings">
+    </form>
+
+    <h2>Send a Message</h2>
+    <form method="POST" action="/send_message">
+        <label for="message">Message:</label>
+        <textarea id="message" name="message" rows="4" cols="50"></textarea><br><br>
+        <input type="submit" value="Send Message">
+    </form>
+
+    <h2>Received Messages</h2>
+    <ul>
+        {% for author, message in received_messages %}
+            <li><strong>{{ author }}:</strong> {{ message }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
