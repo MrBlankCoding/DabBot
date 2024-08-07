@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for
 import discord
 from discord.ext import commands
@@ -5,6 +6,11 @@ import threading
 import asyncio
 
 app = Flask(__name__)
+
+# Get the token from the environment variable
+TOKEN = os.getenv('DISCORD_TOKEN')
+if not TOKEN:
+    raise ValueError("No DISCORD_TOKEN found in environment variables")
 
 # Define intents
 intents = discord.Intents.default()
