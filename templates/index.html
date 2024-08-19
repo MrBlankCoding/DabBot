@@ -3,116 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dab bot</title>
-    <!-- Materialize CSS -->
+    <title>Discord Bot Control Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-    <!-- Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <style>
-        body { padding-top: 20px; }
-        .message-list { max-height: 300px; overflow-y: auto; }
-    </style>
 </head>
 <body>
     <div class="container">
         <h2 class="header center-align">Discord Bot Control Panel</h2>
-
-        <div class="row">
-            <div class="col s12">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="card-panel {{ 'green lighten-4' if category == 'success' else 'red lighten-4' }}">
-                                {{ message }}
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-            </div>
+        <div class="row center-align">
+            <a href="{{ url_for('server') }}" class="btn waves-effect waves-light">Server Messages</a>
+            <a href="{{ url_for('dm') }}" class="btn waves-effect waves-light">Direct Messages</a>
         </div>
-
-        <div class="row">
-            <form class="col s12" method="POST" action="{{ url_for('index') }}">
-                {{ settings_form.hidden_tag() }}
-                <div class="row">
-                    <div class="input-field col s6">
-                        {{ settings_form.channel_id(class="validate") }}
-                        {{ settings_form.channel_id.label }}
-                    </div>
-                    <div class="input-field col s6">
-                        {{ settings_form.user_id(class="validate") }}
-                        {{ settings_form.user_id.label }}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col s12">
-                        <label>
-                            {{ settings_form.dm_mode() }}
-                            <span>{{ settings_form.dm_mode.label }}</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col s12">
-                        {{ settings_form.submit(class="btn waves-effect waves-light") }}
-                        <i class="material-icons right">send</i>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <div class="row">
-            <form class="col s12" action="{{ url_for('send_message') }}" method="POST">
-                {{ message_form.hidden_tag() }}
-                <h4>Send a Message</h4>
-                <div class="row">
-                    <div class="input-field col s12">
-                        {{ message_form.message(class="materialize-textarea") }}
-                        {{ message_form.message.label }}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col s12">
-                        {{ message_form.submit(class="btn waves-effect waves-light") }}
-                        <i class="material-icons right">send</i>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <div class="row">
-            <div class="col s12">
-                <h4>Received Messages</h4>
-                <ul class="collection message-list">
-                {% for author, message in received_messages %}
-                    <li class="collection-item"><strong>{{ author }}:</strong> {{ message }}</li>
-                {% endfor %}
-                </ul>
-            </div>
-        </div>
-
-        {% if errors %}
-        <div class="row">
-            <div class="col s12">
-                <h4>Errors</h4>
-                <ul class="collection">
-                {% for error in errors %}
-                    <li class="collection-item red-text">{{ error }}</li>
-                {% endfor %}
-                </ul>
-            </div>
-        </div>
-        {% endif %}
     </div>
-
-    <!-- Materialize JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            M.updateTextFields();
-            var textareas = document.querySelectorAll('.materialize-textarea');
-            M.textareaAutoResize(textareas);
-        });
-    </script>
 </body>
 </html>
