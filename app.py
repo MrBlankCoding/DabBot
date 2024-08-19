@@ -1,4 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, SubmitField
+from wtforms.validators import DataRequired
 from flask_wtf.csrf import CSRFProtect
 import discord
 from discord.ext import commands
@@ -8,19 +11,6 @@ import os
 import logging
 from queue import Queue
 from dotenv import load_dotenv
-from flask_wtf import FlaskForm
-from wtforms import StringField, BooleanField, SubmitField
-from wtforms.validators import DataRequired
-
-class ServerMessageForm(FlaskForm):
-    channel_id = StringField('Channel ID', validators=[DataRequired()])
-    message = TextAreaField('Message', validators=[DataRequired()])
-    submit = SubmitField('Send Message')
-
-class DMMessageForm(FlaskForm):
-    user_id = StringField('User ID', validators=[DataRequired()])
-    message = TextAreaField('Message', validators=[DataRequired()])
-    submit = SubmitField('Send DM')
 
 # Load environment variables
 load_dotenv()
@@ -53,6 +43,16 @@ ready_event = asyncio.Event()
 received_messages = Queue()
 error_messages = Queue()
 
+class ServerMessageForm(FlaskForm):
+    channel_id = StringField('Channel ID', validators=[DataRequired()])
+    message = TextAreaField('Message', validators=[DataRequired()])
+    submit = SubmitField('Send Message')
+
+class DMMessageForm(FlaskForm):
+    user_id = StringField('User ID', validators=[DataRequired()])
+    message = TextAreaField('Message', validators=[DataRequired()])
+    submit = SubmitField('Send DM')
+
 @bot.event
 async def on_ready():
     logger.info(f'Bot is ready. Logged in as {bot.user}')
@@ -60,8 +60,11 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    if dm_mode and message.guild is None and message.author != bot.user:
+    if message.guild is None and message.author != bot.user:
         logger.info(f"Received DM from {message.author}: {message.content}")
+        received_messages.put((message.author.name, message.content))
+    elif message.guild is not None and message.author != bot.user:
+        logger.info(f"Received server message from {message.author} in {message.channel}: {message.content}")
         received_messages.put((message.author.name, message.content))
     await bot.process_commands(message)
 
@@ -100,60 +103,69 @@ def run_bot():
     asyncio.set_event_loop(loop)
     loop.run_until_complete(bot.start(TOKEN))
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    global channel_id, user_id, dm_mode
-    settings_form = SettingsForm()
-    message_form = MessageForm()
+@app.before_first_request
+def initialize_bot():
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
+    
+    # Wait for the bot to be ready (with a timeout)
+    try:
+        asyncio.get_event_loop().run_until_complete(asyncio.wait_for(ready_event.wait(), timeout=60))
+    except asyncio.TimeoutError:
+        logger.error("Timed out waiting for bot to be ready")
 
-    if settings_form.validate_on_submit():
-        channel_id = int(settings_form.channel_id.data) if settings_form.channel_id.data else None
-        user_id = int(settings_form.user_id.data) if settings_form.user_id.data else None
-        dm_mode = settings_form.dm_mode.data
-        flash('Settings updated successfully!', 'success')
-        return redirect(url_for('index'))
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/server', methods=['GET', 'POST'])
+def server():
+    global channel_id
+    form = ServerMessageForm()
+    if form.validate_on_submit():
+        channel_id = int(form.channel_id.data)
+        message = form.message.data
+        asyncio.run_coroutine_threadsafe(send_channel_message(channel_id, message), bot.loop)
+        flash('Message sent to server!', 'success')
+        return redirect(url_for('server'))
     
     messages = []
     while not received_messages.empty():
-        messages.append(received_messages.get())
+        author, content = received_messages.get()
+        if not dm_mode:
+            messages.append((author, content))
     
     errors = []
     while not error_messages.empty():
         errors.append(error_messages.get())
 
-    return render_template('index.html', settings_form=settings_form, message_form=message_form,
-                           channel_id=channel_id, user_id=user_id, 
-                           dm_mode=dm_mode, received_messages=messages, errors=errors)
+    return render_template('server.html', form=form, channel_id=channel_id, 
+                           received_messages=messages, errors=errors)
 
-@app.route('/send_message', methods=['POST'])
-def send_message():
-    global channel_id, user_id, dm_mode
-    form = MessageForm()
-    
+@app.route('/dm', methods=['GET', 'POST'])
+def dm():
+    global user_id, dm_mode
+    form = DMMessageForm()
     if form.validate_on_submit():
+        user_id = int(form.user_id.data)
         message = form.message.data
-        
-        if dm_mode and user_id:
-            asyncio.run_coroutine_threadsafe(send_dm(user_id, message), bot.loop)
-        elif channel_id:
-            asyncio.run_coroutine_threadsafe(send_channel_message(channel_id, message), bot.loop)
-        else:
-            flash('Please set a channel ID or user ID and enable DM mode.', 'error')
-    else:
-        flash('Invalid form submission.', 'error')
+        dm_mode = True
+        asyncio.run_coroutine_threadsafe(send_dm(user_id, message), bot.loop)
+        flash('DM sent!', 'success')
+        return redirect(url_for('dm'))
     
-    return redirect(url_for('index'))
+    messages = []
+    while not received_messages.empty():
+        author, content = received_messages.get()
+        if dm_mode:
+            messages.append((author, content))
+    
+    errors = []
+    while not error_messages.empty():
+        errors.append(error_messages.get())
 
-def run_bot():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(bot.start(TOKEN))
-    
+    return render_template('dm.html', form=form, user_id=user_id, 
+                           received_messages=messages, errors=errors)
+
 if __name__ == '__main__':
-    logger.info("Starting Discord bot")
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
-
-    logger.info("Starting Flask application")
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)
