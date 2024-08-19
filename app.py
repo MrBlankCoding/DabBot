@@ -128,9 +128,16 @@ def send_message():
     
     return redirect(url_for('index'))
 
-# Initialize the bot in a separate thread
-bot_thread = threading.Thread(target=run_bot, daemon=True)
-bot_thread.start()
+def run_bot():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(bot.start(TOKEN))
+    
+if __name__ == '__main__':
+    logger.info("Starting Discord bot")
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
 
-# Wait for the bot to be ready
-asyncio.get_event_loop().run_until_complete(ready_event.wait())
+    logger.info("Starting Flask application")
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
