@@ -3,7 +3,9 @@ import multiprocessing
 # Bind to 0.0.0.0 to allow external access
 bind = "0.0.0.0:$PORT"
 
-workers = 1
+workers = 3
+
+timeout = 120 
 
 
 max_requests = 1000
