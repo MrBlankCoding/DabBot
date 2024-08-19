@@ -32,32 +32,30 @@
         </div>
 
         <div class="row">
-            <form class="col s12" method="POST">
-                {{ form.csrf_token }}
+            <form class="col s12" method="POST" action="{{ url_for('index') }}">
+                {{ settings_form.hidden_tag() }}
                 <div class="row">
                     <div class="input-field col s6">
-                        <input type="text" id="channel_id" name="channel_id" value="{{ channel_id or '' }}">
-                        <label for="channel_id">Channel ID</label>
+                        {{ settings_form.channel_id(class="validate") }}
+                        {{ settings_form.channel_id.label }}
                     </div>
                     <div class="input-field col s6">
-                        <input type="text" id="user_id" name="user_id" value="{{ user_id or '' }}">
-                        <label for="user_id">User ID</label>
+                        {{ settings_form.user_id(class="validate") }}
+                        {{ settings_form.user_id.label }}
                     </div>
                 </div>
                 <div class="row">
                     <div class="col s12">
                         <label>
-                            <input type="checkbox" id="dm_mode" name="dm_mode" {% if dm_mode %}checked{% endif %}>
-                            <span>DM Mode</span>
+                            {{ settings_form.dm_mode() }}
+                            <span>{{ settings_form.dm_mode.label }}</span>
                         </label>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col s12">
-                        <button class="btn waves-effect waves-light" type="submit">
-                            Update Settings
-                            <i class="material-icons right">send</i>
-                        </button>
+                        {{ settings_form.submit(class="btn waves-effect waves-light") }}
+                        <i class="material-icons right">send</i>
                     </div>
                 </div>
             </form>
@@ -65,20 +63,18 @@
 
         <div class="row">
             <form class="col s12" action="{{ url_for('send_message') }}" method="POST">
-                {{ form.csrf_token }}
+                {{ message_form.hidden_tag() }}
                 <h4>Send a Message</h4>
                 <div class="row">
                     <div class="input-field col s12">
-                        <textarea id="message" name="message" class="materialize-textarea"></textarea>
-                        <label for="message">Message</label>
+                        {{ message_form.message(class="materialize-textarea") }}
+                        {{ message_form.message.label }}
                     </div>
                 </div>
                 <div class="row">
                     <div class="col s12">
-                        <button class="btn waves-effect waves-light" type="submit">
-                            Send Message
-                            <i class="material-icons right">send</i>
-                        </button>
+                        {{ message_form.submit(class="btn waves-effect waves-light") }}
+                        <i class="material-icons right">send</i>
                     </div>
                 </div>
             </form>
