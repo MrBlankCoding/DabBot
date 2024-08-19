@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SubmitField
+from werkzeug.serving import is_running_from_reloader
 from wtforms.validators import DataRequired
 from flask_wtf.csrf import CSRFProtect
 import discord
@@ -42,6 +43,7 @@ dm_mode = False
 ready_event = asyncio.Event()
 received_messages = Queue()
 error_messages = Queue()
+bot_initialized = False
 
 class ServerMessageForm(FlaskForm):
     channel_id = StringField('Channel ID', validators=[DataRequired()])
@@ -103,16 +105,23 @@ def run_bot():
     asyncio.set_event_loop(loop)
     loop.run_until_complete(bot.start(TOKEN))
 
-@app.before_first_request
 def initialize_bot():
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
-    
-    # Wait for the bot to be ready (with a timeout)
-    try:
-        asyncio.get_event_loop().run_until_complete(asyncio.wait_for(ready_event.wait(), timeout=60))
-    except asyncio.TimeoutError:
-        logger.error("Timed out waiting for bot to be ready")
+    global bot_initialized
+    if not bot_initialized and not is_running_from_reloader():
+        bot_thread = threading.Thread(target=run_bot, daemon=True)
+        bot_thread.start()
+        
+        # Wait for the bot to be ready (with a timeout)
+        try:
+            asyncio.get_event_loop().run_until_complete(asyncio.wait_for(ready_event.wait(), timeout=60))
+            bot_initialized = True
+            logger.info("Bot initialized successfully")
+        except asyncio.TimeoutError:
+            logger.error("Timed out waiting for bot to be ready")
+
+@app.before_request
+def before_request():
+    initialize_bot()
 
 @app.route('/')
 def index():
