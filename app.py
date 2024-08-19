@@ -8,6 +8,19 @@ import os
 import logging
 from queue import Queue
 from dotenv import load_dotenv
+from flask_wtf import FlaskForm
+from wtforms import StringField, BooleanField, SubmitField
+from wtforms.validators import DataRequired
+
+class SettingsForm(FlaskForm):
+    channel_id = StringField('Channel ID', validators=[DataRequired()])
+    user_id = StringField('User ID', validators=[DataRequired()])
+    dm_mode = BooleanField('DM Mode')
+    submit = SubmitField('Update Settings')
+
+class MessageForm(FlaskForm):
+    message = StringField('Message', validators=[DataRequired()])
+    submit = SubmitField('Send Message')
 
 # Load environment variables
 load_dotenv()
