@@ -12,15 +12,15 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, BooleanField, SubmitField
 from wtforms.validators import DataRequired
 
-class SettingsForm(FlaskForm):
+class ServerMessageForm(FlaskForm):
     channel_id = StringField('Channel ID', validators=[DataRequired()])
-    user_id = StringField('User ID', validators=[DataRequired()])
-    dm_mode = BooleanField('DM Mode')
-    submit = SubmitField('Update Settings')
-
-class MessageForm(FlaskForm):
-    message = StringField('Message', validators=[DataRequired()])
+    message = TextAreaField('Message', validators=[DataRequired()])
     submit = SubmitField('Send Message')
+
+class DMMessageForm(FlaskForm):
+    user_id = StringField('User ID', validators=[DataRequired()])
+    message = TextAreaField('Message', validators=[DataRequired()])
+    submit = SubmitField('Send DM')
 
 # Load environment variables
 load_dotenv()
