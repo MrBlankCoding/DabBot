@@ -103,11 +103,13 @@ def run_bot():
 @app.route('/', methods=['GET', 'POST'])
 def index():
     global channel_id, user_id, dm_mode
-    if request.method == 'POST':
-        channel_id = int(request.form['channel_id']) if request.form['channel_id'] else None
-        user_id = int(request.form['user_id']) if request.form['user_id'] else None
-        dm_mode = 'dm_mode' in request.form
+    settings_form = SettingsForm()
+    message_form = MessageForm()
 
+    if settings_form.validate_on_submit():
+        channel_id = int(settings_form.channel_id.data) if settings_form.channel_id.data else None
+        user_id = int(settings_form.user_id.data) if settings_form.user_id.data else None
+        dm_mode = settings_form.dm_mode.data
         flash('Settings updated successfully!', 'success')
         return redirect(url_for('index'))
     
@@ -119,25 +121,26 @@ def index():
     while not error_messages.empty():
         errors.append(error_messages.get())
 
-    return render_template('index.html', channel_id=channel_id, user_id=user_id, 
+    return render_template('index.html', settings_form=settings_form, message_form=message_form,
+                           channel_id=channel_id, user_id=user_id, 
                            dm_mode=dm_mode, received_messages=messages, errors=errors)
 
 @app.route('/send_message', methods=['POST'])
-@csrf.exempt
 def send_message():
     global channel_id, user_id, dm_mode
-    message = request.form['message']
+    form = MessageForm()
     
-    if not message:
-        flash('Message cannot be empty!', 'error')
-        return redirect(url_for('index'))
-
-    if dm_mode and user_id:
-        asyncio.run_coroutine_threadsafe(send_dm(user_id, message), bot.loop)
-    elif channel_id:
-        asyncio.run_coroutine_threadsafe(send_channel_message(channel_id, message), bot.loop)
+    if form.validate_on_submit():
+        message = form.message.data
+        
+        if dm_mode and user_id:
+            asyncio.run_coroutine_threadsafe(send_dm(user_id, message), bot.loop)
+        elif channel_id:
+            asyncio.run_coroutine_threadsafe(send_channel_message(channel_id, message), bot.loop)
+        else:
+            flash('Please set a channel ID or user ID and enable DM mode.', 'error')
     else:
-        flash('Please set a channel ID or user ID and enable DM mode.', 'error')
+        flash('Invalid form submission.', 'error')
     
     return redirect(url_for('index'))
 
