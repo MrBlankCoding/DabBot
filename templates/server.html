@@ -3,30 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Bot - Server Messages</title>
+    <title>Server Messages</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        body { display: flex; min-height: 100vh; flex-direction: column; }
-        main { flex: 1 0 auto; }
-        .message-container { max-height: 300px; overflow-y: auto; }
+        body { padding-top: 20px; }
+        .message-list { max-height: 300px; overflow-y: auto; }
     </style>
 </head>
 <body>
-    <nav class="blue darken-3">
-        <div class="nav-wrapper container">
-            <a href="{{ url_for('index') }}" class="brand-logo">Discord Bot</a>
-            <ul id="nav-mobile" class="right hide-on-med-and-down">
-                <li><a href="{{ url_for('index') }}">Home</a></li>
-                <li><a href="{{ url_for('dm') }}">Direct Messages</a></li>
-                <li class="active"><a href="{{ url_for('server') }}">Server Messages</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <main class="container">
+    <div class="container">
         <h2 class="header center-align">Server Messages</h2>
-
+        
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -37,103 +25,62 @@
             {% endif %}
         {% endwith %}
 
-        <div class="row">
-            <form class="col s12" method="POST" action="{{ url_for('send_message') }}" enctype="multipart/form-data">
-                {{ form.hidden_tag() }}
-                <div class="row">
-                    <div class="input-field col s12">
-                        {{ form.channel_id(class="validate") }}
-                        {{ form.channel_id.label }}
-                    </div>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="row">
+                <div class="input-field col s12">
+                    {{ form.channel_id(class="validate") }}
+                    {{ form.channel_id.label }}
                 </div>
-                <div class="row">
-                    <div class="input-field col s12">
-                        {{ form.message(class="materialize-textarea") }}
-                        {{ form.message.label }}
-                    </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    {{ form.message(class="materialize-textarea") }}
+                    {{ form.message.label }}
                 </div>
-                <div class="row">
-                    <div class="file-field input-field col s12">
-                        <div class="btn">
-                            <span>File</span>
-                            <input type="file" name="file">
-                        </div>
-                        <div class="file-path-wrapper">
-                            <input class="file-path validate" type="text">
-                        </div>
-                    </div>
+            </div>
+            <div class="row">
+                <div class="col s12">
+                    {{ form.submit(class="btn waves-effect waves-light") }}
                 </div>
-                <div class="row">
-                    <div class="input-field col s12">
-                        <input type="text" name="reply_to" id="reply_to" placeholder="Message ID to reply to (optional)">
-                        <label for="reply_to">Reply to Message ID</label>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col s12">
-                        {{ form.submit(class="btn waves-effect waves-light") }}
-                    </div>
-                </div>
-            </form>
-        </div>
+            </div>
+        </form>
 
         <div class="row">
             <div class="col s12">
                 <h4>Received Messages</h4>
-                <div class="message-container">
-                    <ul class="collection">
-                        {% for author, message in received_messages %}
-                            <li class="collection-item">
-                                <strong>{{ author }}:</strong> {{ message }}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
+                <ul class="collection message-list">
+                {% for author, message in received_messages %}
+                    <li class="collection-item"><strong>{{ author }}:</strong> {{ message }}</li>
+                {% endfor %}
+                </ul>
             </div>
         </div>
 
         {% if errors %}
-            <div class="row">
-                <div class="col s12">
-                    <h4>Errors</h4>
-                    <ul class="collection">
-                        {% for error in errors %}
-                            <li class="collection-item red-text">{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
+        <div class="row">
+            <div class="col s12">
+                <h4>Errors</h4>
+                <ul class="collection">
+                {% for error in errors %}
+                    <li class="collection-item red-text">{{ error }}</li>
+                {% endfor %}
+                </ul>
             </div>
+        </div>
         {% endif %}
 
         <div class="row center-align">
-            <form method="POST" action="{{ url_for('toggle_censor') }}">
-                <button type="submit" class="btn waves-effect waves-light">
-                    {% if censor_enabled %}Disable{% else %}Enable{% endif %} Censoring
-                </button>
-            </form>
+            <a href="{{ url_for('index') }}" class="btn waves-effect waves-light">Back to Home</a>
         </div>
-    </main>
-
-    <footer class="page-footer blue darken-3">
-        <div class="container">
-            <div class="row">
-                <div class="col l6 s12">
-                    <h5 class="white-text">Discord Bot Control Panel</h5>
-                    <p class="grey-text text-lighten-4">Manage your Discord bot with ease.</p>
-                </div>
-            </div>
-        </div>
-        <div class="footer-copyright">
-            <div class="container">
-                © 2024 Your Name
-            </div>
-        </div>
-    </footer>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            M.AutoInit();
+            M.updateTextFields();
+            var textareas = document.querySelectorAll('.materialize-textarea');
+            M.textareaAutoResize(textareas);
         });
     </script>
 </body>
